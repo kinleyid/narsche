@@ -14,7 +14,7 @@ license = { text = "MIT" }
 dependencies = [
     "networkx", "spacy", "wordfreq"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [tool.setuptools.packages.find]
 where = ["."]
