@@ -129,7 +129,7 @@ class VectorModel(Model):
             if sim >= threshold:
                 graph.add_edge(word1, word2, strength=sim)
         # Create network model
-        return NetworkModel(source=graph)
+        return NetworkModel(graph)
 
 
 class NetworkModel:
