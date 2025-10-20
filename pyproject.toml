@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "narsche"
+version = "0.1.0"
+description = "Autobiographical narrative schematicity"
+authors = [
+    { name="Isaac Kinley", email="isaac.kinley@gmail.com" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+dependencies = [
+    "networkx", "spacy", "wordfreq"
+]
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+where = ["."]
