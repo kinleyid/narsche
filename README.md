@@ -1,6 +1,8 @@
 
 # Measuring narrative schematicity
 
+[![codecov](https://codecov.io/github/kinleyid/narsche/graph/badge.svg?token=EHCYVTZWCE)](https://codecov.io/github/kinleyid/narsche)
+
 ## Usage
 
 ```python
