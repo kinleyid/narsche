@@ -1,0 +1,4 @@
+dist
+htmlcov
+narsche
+tests

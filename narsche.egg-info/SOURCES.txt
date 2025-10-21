@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+narsche/__init__.py
+narsche.egg-info/PKG-INFO
+narsche.egg-info/SOURCES.txt
+narsche.egg-info/dependency_links.txt
+narsche.egg-info/requires.txt
+narsche.egg-info/top_level.txt
+tests/test_narsche.py
