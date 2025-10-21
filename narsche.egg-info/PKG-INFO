@@ -1,14 +1,16 @@
 Metadata-Version: 2.4
 Name: narsche
-Version: 0.1.0
+Version: 0.1.1
 Summary: Computing schematicity of autobiographical narratives
 Author-email: Isaac Kinley <isaac.kinley@gmail.com>
 License-Expression: MIT
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: networkx
 Requires-Dist: spacy
 Requires-Dist: wordfreq
+Dynamic: license-file
 
 
 # Measuring narrative schematicity
@@ -19,9 +21,15 @@ Methods from the paper "Computational Tools for Quantifying Schemas in Autobiogr
 
 ## Installation
 
-[Under construction until this project is on PyPI]
+```
+pip install narsche
+```
 
-Depends on `networkx` (for network models), `SpaCy` (for tokenization), and `wordfreq` for automated topic identification. Additionally, one of `SpaCy`'s models must be downloaded (see their instructions on how to do this).
+`narsche` depends on `networkx` (for network models), `SpaCy` (for tokenization), and `wordfreq` for automated topic identification. Additionally, one of `SpaCy`'s models must be downloaded for `SpaCy`-based tokenization:
+
+```
+python -m spacy download en_core_web_sm
+```
 
 ## Usage
 

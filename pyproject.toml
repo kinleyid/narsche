@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "narsche"
-version = "0.1.0"
+version = "0.1.1"
 description = "Computing schematicity of autobiographical narratives"
 authors = [
     { name="Isaac Kinley", email="isaac.kinley@gmail.com" }
