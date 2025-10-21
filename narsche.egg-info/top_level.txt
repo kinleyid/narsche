@@ -1,3 +1,0 @@
-narsche
-tests
-venv

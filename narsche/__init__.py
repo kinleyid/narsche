@@ -334,21 +334,49 @@ class Tokenizer:
         doc = self.nlp(text)
         return [self._lemmatize_token(tok) for tok in doc]
 
-    def _is_content_token(self, tok):
-        return not tok.is_stop and tok.pos_ in ("NOUN", "VERB", "ADJ", "ADV")
+    def _is_content(self, tok):
+        return tok.pos_ in ("NOUN", "VERB", "ADJ", "ADV")
 
-    def tokenize(self, text):
+    def tokenize(
+        self, text, rm_stops=True, only_content=True, lemmatize=False, lowercase=True
+    ):
         """
         Tokenize text (lowercase and keep only non-stop content words)
 
         Args:
             text (str): text to be tokenized
+            rm_stops (bool): remove stopwords
+            only_content (bool): keep only content words (nounds, verbs, adjectives, adverbs)
+            lemmatize (bool): lemmatize tokens
+            lowercase (bool): convert words to lowercase
 
         Returns:
             tokens (list of str): list of tokens
         """
         doc = self.nlp(text)
-        tokenized = [tok.text.lower() for tok in doc if self._is_content_token(tok)]
+        tokenized = []
+        for tok in doc:
+
+            keep_word = True
+
+            if rm_stops and tok.is_stop:
+                keep_word = False
+
+            if only_content and tok.pos_ not in ("NOUN", "VERB", "ADJ", "ADV"):
+                keep_word = False
+
+            if keep_word:
+
+                if lemmatize:
+                    word = tok.lemma_
+                else:
+                    word = tok.text
+
+                if lowercase:
+                    word = word.lower()
+
+                tokenized.append(word)
+
         return tokenized
 
 
