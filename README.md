@@ -7,9 +7,15 @@ Methods from the paper "Computational Tools for Quantifying Schemas in Autobiogr
 
 ## Installation
 
-[Under construction until this project is on PyPI]
+```
+pip install narsche
+```
 
-Depends on `networkx` (for network models), `SpaCy` (for tokenization), and `wordfreq` for automated topic identification. Additionally, one of `SpaCy`'s models must be downloaded (see their instructions on how to do this).
+`narsche` depends on `networkx` (for network models), `SpaCy` (for tokenization), and `wordfreq` for automated topic identification. Additionally, one of `SpaCy`'s models must be downloaded for `SpaCy`-based tokenization:
+
+```
+python -m spacy download en_core_web_sm
+```
 
 ## Usage
 
