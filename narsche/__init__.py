@@ -116,6 +116,20 @@ class VectorModel(Model):
     """
 
     def __init__(self, words, vectors):
+        """
+        Initializes vector model
+
+        Args:
+            words (list of str): words in model
+            vectors (numpy array): array of corresponding vectors
+        """
+        if isinstance(words, list):
+            if not all(isinstance(word, str) for word in words):
+                raise ValueError("words is not a list of strings")
+        if not isinstance(vectors, np.ndarray):
+            raise ValueError("vectors is not an np.ndarray")
+        if len(words) != len(vectors):
+            raise ValueError("different numbers of words and vectors")
         # Store efficiently---list of words, matrix of vectors, and index
         self.words = words
         self.vectors = vectors
@@ -210,6 +224,12 @@ class NetworkModel(Model):
     """
 
     def __init__(self, graph):
+        """
+        Initializes vector model
+
+        Args:
+            graph (networkx.Graph): network of words whose edges include a "strength" attribute
+        """
         if not isinstance(graph, nx.Graph):
             raise TypeError(f"Expected a networkx.Graph, got %s" % type(graph).__name__)
         for u, v, data in graph.edges(data=True):
