@@ -3,7 +3,7 @@
 
 ## Usage
 
-```
+```python
 import narsche
 
 mod = narsche.read_vectors('/path/to/vectors.txt') # Load vectors from txt file
