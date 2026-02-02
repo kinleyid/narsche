@@ -9,65 +9,78 @@ from pdb import set_trace
 
 epsilon = sys.float_info.epsilon
 
-
 def get_pairs(iterable):
     """
     Gets adjacent pairs of items from some iterable collection.
 
-    Args:
-        iterable (iterable): some iterable collection (e.g., a list or tuple)
+    Parameters
+    ----------
+    iterable : list, tuple, or other iterable
+        Come iterable collection such as a list or tuple.
 
-    Returns:
-        pairs: adjacent pairs or items in a list
+    Returns
+    -------
+    pairs : list
+        Adjacent pairs or items in a list.
+
     """
     pairs = [(a, b) for i, a in enumerate(iterable) for b in iterable[(i + 1) :]]
     return pairs
 
 
-def identify_topic(words):
+def identify_topic(words, return_scores=False):
     """
-    Identifies the topic using tf-idf
+    Identify topic using tf-idf
 
-    Args:
-        words (list): a list of words
+    Parameters
+    ----------
+    words : list
+        A list of words in a narrative. Note that because term frequency is used to evaluate topic candidacy, this should not be a list of only the unique words in a narrative---it a word occurs multiple times in the narrative, it should occur multiple times in this list.
+    return_scores: bool, optional
+        Whether to return the TF-IDF scores for each word in a dictionary in addition to the topic. The default is False.
 
-    Returns:
-        topic (str): the topic word
+    Returns
+    -------
+    topic : str
+        The topic word.
+    scores : dict
+        TF-IDF scores for each word.
+        
     """
-    bag = np.array(sorted(list(set(words))))  # Unique words
-
-    """
-    # Compute tf-idf
-    tf = np.array([words.count(word) for word in bag])
-    df = np.array([word_frequency(word=word, lang='en') for word in bag])
-    idf = np.log(1 / df)
-    tf_idf = tf*idf
-    """
-
+    bag = set(words) # unique words
+    # get term frequency
     tf = Counter(words)
-    # Compute doc frequency (could be 0)
+    # compute doc frequency (could be 0, in which case sub in epsilon)
     df = {word: word_frequency(word=word, lang="en", minimum=epsilon) for word in bag}
-    # Recompute bag
-    bag = np.array([word for word in df if df[word] > 0])
     idf = {word: np.log(1 / df[word]) for word in bag}
-    tf_idf = np.array([tf[word] * idf[word] for word in bag])
-    # Sort
-    sort_idx = np.argsort(-tf_idf)  # Negative to be in descending
-    sorted_bag = bag[sort_idx]
-    # Get topic (top ranked)
-    return str(sorted_bag[0])
+    tf_idf = {word: tf[word] * idf[word] for word in bag}
+    # sort ascendingly
+    tf_idf = {k: v for k, v in sorted(tf_idf.items(), key=lambda item: -item[1])}
+    # topic is first item
+    topic = next(iter(tf_idf))
+    assert tf_idf[topic] == max(tf_idf.values()) # probably not necessary but peace of mind
+    if return_scores:
+        return topic, tf_idf
+    else:
+        return topic
 
 
 def read_vectors(file, encoding="utf-8"):
     """
-    Reads word vectors from a text file. Each line of the file should be formatted <word> <dim1> <dim2> <dim3> ... Vectors are automatically normalized
+    Create vector model from text file containing word vectors.
 
-    Args:
-        file (str): name of text file
-        encoding (str): encoding used when reading the file
+    Parameters
+    ----------
+    file : str
+        Path to text file containing word vectors.
+    encoding : str, optional
+        The encoding to use when reading the text file. The default is "utf-8".
 
-    Returns:
-        model (VectorModel): vectors in a VectorModel
+    Returns
+    -------
+    model : VectorModel
+        A vector model based on the embeddings in the text file.
+
     """
     words = []
     vectors = []
@@ -84,7 +97,8 @@ def read_vectors(file, encoding="utf-8"):
     # Normalize
     norms = np.linalg.norm(vectors, axis=1, keepdims=True)
     vectors /= norms
-    return VectorModel(words, vectors)
+    model = VectorModel(words, vectors)
+    return model
 
 
 class Model:
@@ -98,7 +112,7 @@ class Model:
             obj = pickle.load(f)
         if not isinstance(obj, cls):
             raise TypeError(
-                f"Expected instance of %s, got %s" % (cls.__name__, type(obj).__name__)
+                "Expected instance of %s, got %s" % (cls.__name__, type(obj).__name__)
             )
         return obj
 
@@ -130,15 +144,43 @@ class VectorModel(Model):
             raise ValueError("vectors is not an np.ndarray")
         if len(words) != len(vectors):
             raise ValueError("different numbers of words and vectors")
-        # Store efficiently---list of words, matrix of vectors, and index
-        self.words = words
+        # Store as dict of words and matrix of vectors
+        self.words = {w: i for i, w in enumerate(words)}
         self.vectors = vectors
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            idx = self.words == key
+            return self.vectors[idx]
+        if isinstance(key, (list, set, tuple)):
+            idx = [self.index[w] for w in key]
+            return self.vectors[idx]
+        else:
+            raise ValueError('key must be a string or iterable of strings')
 
     def __contains__(self, word):
         return word in self.words
 
-    def in_model(self, word):
-        return word in self.words
+    def get_vectors(self, words):
+        """
+        Get vectors for a word or list of words
+
+        Parameters
+        ----------
+        words : STR or LIST or TUPLE
+            a word or iterable of words for which to return the corresponding vectors
+
+        Returns
+        -------
+        array containing word vectors
+
+        """
+        # Enforce iterability
+        if isinstance(words, str):
+            words = [words]
+        idx = np.array([self.words[word] for word in words])
+        out = self.vectors[idx]
+        return out
 
     def compute_sim(self, word1, word2):
         """
@@ -201,7 +243,7 @@ class VectorModel(Model):
 
         # Get only those tokens that are actually in current dictionary
         if words != None:
-            words = [w for w in words if w in self.words]
+            words = [w for w in words if w in self]
         else:
             words = self.words
         pairs = get_pairs(words)
@@ -231,11 +273,11 @@ class NetworkModel(Model):
             graph (networkx.Graph): network of words whose edges include a "strength" attribute
         """
         if not isinstance(graph, nx.Graph):
-            raise TypeError(f"Expected a networkx.Graph, got %s" % type(graph).__name__)
+            raise TypeError("Expected a networkx.Graph, got %s" % type(graph).__name__)
         for u, v, data in graph.edges(data=True):
             if "strength" not in data:
                 raise ValueError(
-                    f"Edge (%s, %s) is missing 'strength' attribute" % (u, v)
+                    "Edge (%s, %s) is missing 'strength' attribute" % (u, v)
                 )
         # Compute inverse strength
         inv_strength = {
@@ -245,9 +287,6 @@ class NetworkModel(Model):
         self.graph = graph
 
     def __contains__(self, word):
-        return word in self.graph
-
-    def in_model(self, word):
         return word in self.graph
 
     def compute_sim(self, word1, word2):

@@ -27,7 +27,9 @@ A text file of word vectors can be read using the `read_vectors()` function:
 vec_mod = narsche.read_vectors('/path/to/vectors.txt')
 ```
 
-This produces a vector model. Initializing a network model requires first loading a `networkx.Graph` object:
+This produces a vector model. The text file must be formatted such that the first token (space-delimited) on a line is the word for which the remaining tokens are the vector components. This is how, for example, the [GloVe embeddings](https://nlp.stanford.edu/projects/glove/) are formatted.
+
+Initializing a network model requires first loading a `networkx.Graph` object:
 
 ```python
 import networkx as nx
