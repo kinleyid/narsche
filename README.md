@@ -38,6 +38,8 @@ graph = nx.load('/path/to/graph')
 net_mod = narsche.NetworkModel(graph)
 ```
 
+A script for setting up a network model us can be found [here](/examples/create-conceptnet-graph.py).
+
 Models can be saved using the `save()` method and loaded using the `load()` class method:
 
 ```python

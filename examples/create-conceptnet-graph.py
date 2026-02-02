@@ -3,7 +3,7 @@ import os, gzip, json, pickle
 import networkx as nx
 import narsche
 
-# Reads conceptnet gzip file, creates graph, and writes to pickle
+# Reads conceptnet gzip file, creates graph, and saves
 
 mod_path = '/path/to/models'
 # Download conceptnet from https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz
