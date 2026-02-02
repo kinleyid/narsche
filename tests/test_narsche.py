@@ -45,14 +45,18 @@ def test_load_vector_model(cur_dir):
 
 def test_vector_model_methods(vector_mod):
     assert "lamp" in vector_mod
-    vector_mod.compute_sim("lamp", "desk")
-    vector_mod.get_lexicon("lamp", top_n=2, including_topic=True)
+    sim = vector_mod.compute_sim("lamp", "desk")
+    assert 0.98 < sim < 1
+    lex = vector_mod.get_lexicon("lamp", top_n=2, including_topic=True)
+    assert set(lex) == {'desk', 'lamp'}
     vector_mod.get_lexicon("lamp", top_n=2, including_topic=False)
+    assert set(lex) == {'desk', 'chair'}
 
 
 def test_as_graph(vector_mod, network_mod):
     assert isinstance(network_mod, narsche.NetworkModel)
     vector_mod.as_graph(words=["lamp", "desk", "pottery"], threshold=0.3)
+    assert len(network_mod.graph) == 2
 
 
 def test_save_network_model(network_mod, cur_dir):

@@ -65,7 +65,7 @@ def identify_topic(words, return_scores=False):
         return topic
 
 
-def read_vectors(file, encoding="utf-8"):
+def read_vectors(file, encoding="utf-8", normalize=True):
     """
     Create vector model from text file containing word vectors.
 
@@ -75,6 +75,8 @@ def read_vectors(file, encoding="utf-8"):
         Path to text file containing word vectors.
     encoding : str, optional
         The encoding to use when reading the text file. The default is "utf-8".
+    normalize : bool, optional
+        Whether to normalize the vectors for cosine similarity computation. Can be skipped for speed if vectors are already normalized. The default is True.
 
     Returns
     -------
@@ -94,9 +96,9 @@ def read_vectors(file, encoding="utf-8"):
             # vector /= np.linalg.norm(vector)
             vectors.append(vector)
     vectors = np.array(vectors)
-    # Normalize
-    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-    vectors /= norms
+    if normalize:
+        norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+        vectors /= norms
     model = VectorModel(words, vectors)
     return model
 
@@ -150,37 +152,16 @@ class VectorModel(Model):
 
     def __getitem__(self, key):
         if isinstance(key, str):
-            idx = self.words == key
+            idx = self.words[key]
             return self.vectors[idx]
         if isinstance(key, (list, set, tuple)):
-            idx = [self.index[w] for w in key]
+            idx = [self.words[w] for w in key]
             return self.vectors[idx]
         else:
             raise ValueError('key must be a string or iterable of strings')
 
     def __contains__(self, word):
         return word in self.words
-
-    def get_vectors(self, words):
-        """
-        Get vectors for a word or list of words
-
-        Parameters
-        ----------
-        words : STR or LIST or TUPLE
-            a word or iterable of words for which to return the corresponding vectors
-
-        Returns
-        -------
-        array containing word vectors
-
-        """
-        # Enforce iterability
-        if isinstance(words, str):
-            words = [words]
-        idx = np.array([self.words[word] for word in words])
-        out = self.vectors[idx]
-        return out
 
     def compute_sim(self, word1, word2):
         """
@@ -195,9 +176,7 @@ class VectorModel(Model):
         """
         # Compute similarity
         if word1 in self.words and word2 in self.words:
-            i1, i2 = self.words.index(word1), self.words.index(word2)
-            v1, v2 = self.vectors[i1], self.vectors[i2]
-            sim = np.dot(v1, v2)
+            sim = np.dot(self[word1], self[word2])
         else:
             sim = float("nan")
         return sim
@@ -215,18 +194,20 @@ class VectorModel(Model):
             lexicon (list of str): list of words most related to the topic
         """
         # Get lexicon of words most related to <topic>
-
+        
         # First compute similarities (faster than constructing new matrix not including topic)
-        topic_vector = self.vectors[self.words.index(topic)]
-        similarities = np.matmul(self.vectors, topic_vector)
-        # Sort by similarity
-        sort_idx = np.argsort(similarities)
-        sorted_words = [self.words[i] for i in sort_idx]
+        similarities = np.matmul(self.vectors, self[topic])
+        if not including_topic:
+            # Topic word is guaranteed to be most similar to itself
+            top_n = top_n + 1
+        lex_idx = np.argpartition(similarities, -top_n)[-top_n:]
+        # Need to map from index to words---only create this inverse mapping once as needed
+        if '_rev_idx' not in dir(self):
+            self._rev_idx = {i: w for w, i in self.words.items()}
+        lexicon = [self._rev_idx[i] for i in lex_idx]
         # Remove topic word itself?
         if not including_topic:
-            sorted_words.pop(sorted_words.index(topic))
-        # Pare down
-        lexicon = sorted_words[-top_n:]
+            lexicon.pop(lexicon.index(topic))
         return lexicon
 
     def as_graph(self, threshold, words=None):
@@ -252,7 +233,7 @@ class VectorModel(Model):
         for word1, word2 in pairs:
             sim = self.compute_sim(word1, word2)
             if sim >= threshold:
-                graph.add_edge(word1, word2, strength=sim)
+                graph.add_edge(word1, word2, weight=sim)
         # Create network model
         return NetworkModel(graph)
 
@@ -265,25 +246,23 @@ class NetworkModel(Model):
         graph (networkx.Graph): graph of words
     """
 
-    def __init__(self, graph):
+    def __init__(self, graph, compute_inverse_weight=True):
         """
         Initializes vector model
 
         Args:
-            graph (networkx.Graph): network of words whose edges include a "strength" attribute
+            graph (networkx.Graph): network of words whose edges include a "weight" attribute
         """
         if not isinstance(graph, nx.Graph):
             raise TypeError("Expected a networkx.Graph, got %s" % type(graph).__name__)
-        for u, v, data in graph.edges(data=True):
-            if "strength" not in data:
-                raise ValueError(
-                    "Edge (%s, %s) is missing 'strength' attribute" % (u, v)
-                )
-        # Compute inverse strength
-        inv_strength = {
-            (a, b): 1 / data["strength"] for a, b, data in graph.edges(data=True)
-        }
-        nx.set_edge_attributes(graph, inv_strength, "inv_strength")
+        
+        if compute_inverse_weight:   
+            # Compute inverse weight
+            inv_weight = {
+                (a, b): 1 / data["weight"] for a, b, data in graph.edges(data=True)
+            }
+            nx.set_edge_attributes(graph, inv_weight, "inv_weight")
+        
         self.graph = graph
 
     def __contains__(self, word):
@@ -305,7 +284,7 @@ class NetworkModel(Model):
         if word1 in self.graph and word2 in self.graph:
             try:
                 distance, path = nx.bidirectional_dijkstra(
-                    self.graph, word1, word2, weight="inv_strength"
+                    self.graph, word1, word2, weight="inv_weight"
                 )
                 efficiency = 1 / distance
             except:
@@ -329,7 +308,7 @@ class NetworkModel(Model):
         """
         ego_graph = nx.ego_graph(
             self.graph, n=topic, radius=max_steps, center=including_topic, distance=None
-        )  # Make sure this binarizes the strengths
+        )  # Make sure this binarizes the weights
         lexicon = [w for w in ego_graph]
         return lexicon
 
