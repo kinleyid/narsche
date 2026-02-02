@@ -1,6 +1,7 @@
 
 import os, gzip, json, pickle
 import networkx as nx
+import narsche
 
 # Reads conceptnet gzip file, creates graph, and writes to pickle
 
@@ -52,8 +53,14 @@ with gzip.open(cnet_path, 'rt', encoding='utf-8') as f:
         new_strength = strength + prev_strength
         G.add_edge(*words, strength=new_strength)
 
-
+"""
 # Save graph as pickle
-save_path = os.path.join(mod_path, 'conceptnet-graph.pkl')
+save_path = os.path.join(mod_path, 'conceptnet.pkl')
 with open(save_path, 'wb') as f:
     pickle.dump(G, f)
+"""
+
+# Save model
+mod = narsche.NetworkModel(G)
+save_path = os.path.join(mod_path, 'conceptnet.mod')
+mod.save(save_path)
