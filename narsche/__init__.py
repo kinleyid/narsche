@@ -288,7 +288,6 @@ class NetworkModel(Model):
         """
         Parameters
         ----------
-        
         graph : networkx.Graph
             Network of words whose edges include a "weight" attribute.
         compute_inverse_weight : bool, optional
@@ -405,6 +404,13 @@ class Tokenizer:
     """
 
     def __init__(self, spacy_model="en_core_web_sm"):
+        """
+        Parameters
+        ----------
+        spacy_model : str, optional
+            Spacy model to use for tokenization. The default is "en_core_web_sm".
+        """
+        
         self.nlp = spacy.load(spacy_model)
 
     def _lemmatize_token(self, token):
