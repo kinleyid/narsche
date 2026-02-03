@@ -22,8 +22,8 @@ def get_pairs(iterable):
     -------
     pairs : list
         Adjacent pairs or items in a list.
-
     """
+    
     pairs = [(a, b) for i, a in enumerate(iterable) for b in iterable[(i + 1) :]]
     return pairs
 
@@ -45,8 +45,8 @@ def identify_topic(words, return_scores=False):
         The topic word.
     scores : dict
         TF-IDF scores for each word.
-        
     """
+    
     bag = set(words) # unique words
     # get term frequency
     tf = Counter(words)
@@ -82,8 +82,8 @@ def read_vectors(file, encoding="utf-8", normalize=True):
     -------
     model : VectorModel
         A vector model based on the embeddings in the text file.
-
     """
+    
     words = []
     vectors = []
     with open(file, "r", encoding=encoding) as f:
@@ -125,20 +125,34 @@ class Model:
 class VectorModel(Model):
     """
     Vector-based model
-
-    Attributes:
-        words (list of str): words for which the model has vectors
-        vectors (matrix): numpy matrix containing the vectors (in the same order as the word list)
+    
+    Attributes
+    ----------
+    words : dict
+        Dictionary mapping words in model to indices of word vectors in the matrix of word vectors (see below).
+    vectors : np.ndarray
+        Matrix whose rows are the word vectors.
+    
+    Methods
+    -------
+    compute_sim(word1, word2)
+        Compute cosine similarity between word pairs.
+    get_lexicon(topic, top_n=10000, including_topic=True)
+        Get a lexicon of the words most related to a given topic.
+    as_graph(threshold, words=None)
+        Construct a NetworkModel with thresholded connections based on cosine similarity
     """
 
     def __init__(self, words, vectors):
         """
-        Initializes vector model
-
-        Args:
-            words (list of str): words in model
-            vectors (numpy array): array of corresponding vectors
+        Parameters
+        ----------
+        words : list of strings
+            A list of words corresponding to the word embeddings in "vectors".
+        vectors : np.ndarray
+            A matrix whose rows are the word embeddings.
         """
+        
         if isinstance(words, list):
             if not all(isinstance(word, str) for word in words):
                 raise ValueError("words is not a list of strings")
@@ -167,12 +181,17 @@ class VectorModel(Model):
         """
         Compute cosine similarity between words
 
-        Args:
-            word1 (str): first word
-            word2 (str): second word
+        Parameters
+        ----------
+        word1 : str
+            First word.
+        word2 : str
+            Second word.
 
-        Returns:
-            sim (float): cosine similarity (nan if either word is not in the model)
+        Returns
+        -------
+        sim : float
+            Cosine similarity (nan if either word is not in the model).
         """
         # Compute similarity
         if word1 in self.words and word2 in self.words:
@@ -183,23 +202,29 @@ class VectorModel(Model):
 
     def get_lexicon(self, topic, top_n=10000, including_topic=True):
         """
-        Get "lexicon" of words most related to a topic
+        Get "lexicon" of words most cosine-similar to a topic word
 
-        Args:
-            topic (str): topic word
-            top_n (int): size of lexicon
-            including_topic (bool): should the topic word be included in the lexicon?
+        Parameters
+        ----------
+        topic : str
+            Topic word.
+        top_n : int, optional
+            Size of lexicon to extract. Default is 10,000
+        including_topic : bool, optional
+            Specifies whether the topic word should be included in the lexicon. Default is True.
 
-        Returns:
-            lexicon (list of str): list of words most related to the topic
+        Returns
+        -------
+        lexicon : list of strings
+            List of words most related to the topic word.
         """
-        # Get lexicon of words most related to <topic>
         
         # First compute similarities (faster than constructing new matrix not including topic)
         similarities = np.matmul(self.vectors, self[topic])
         if not including_topic:
             # Topic word is guaranteed to be most similar to itself
             top_n = top_n + 1
+        # Split at top_n
         lex_idx = np.argpartition(similarities, -top_n)[-top_n:]
         # Need to map from index to words---only create this inverse mapping once as needed
         if '_rev_idx' not in dir(self):
@@ -212,24 +237,26 @@ class VectorModel(Model):
 
     def as_graph(self, threshold, words=None):
         """
-        Convert vector model to network model
+        Convert vector model to network model.
 
-        Args:
-            threshold (float): only pairs of words whose cosine similarity is greater than or equal to this threshold will share an edge in the resulting network
-            words (list of str): for speed, only this subset of words will be used to produce the network (rather than all words in the vector-based model)
+        Parameters
+        ----------
+        threshold : float
+            Only pairs of words whose cosine similarity is greater than or equal to this threshold will share an edge in the resulting network.
+        words : list of strings, optional
+            For speed, only this subset of words will be used to produce the network (rather than all words in the vector-based model).
 
-        Returns:
-            model (NetworkModel): graph-based model
+        Returns
+        -------
+        model : NetworkModel
+            Graph-based model.
         """
 
         # Get only those tokens that are actually in current dictionary
-        if words != None:
-            words = [w for w in words if w in self]
-        else:
+        if words == None:
             words = self.words
         pairs = get_pairs(words)
         graph = nx.Graph()
-        edges = []
         for word1, word2 in pairs:
             sim = self.compute_sim(word1, word2)
             if sim >= threshold:
@@ -242,16 +269,30 @@ class NetworkModel(Model):
     """
     Network-based model
 
-    Attributes:
-        graph (networkx.Graph): graph of words
+    Attributes
+    ----------
+    graph : networkx.Graph
+        Graph of words and their weighted connections
+    
+    Methods
+    -------
+    compute_sim(word1, word2)
+        Compute similarity by length of shortest path between words.
+    get_lexicon(topic, max_steps=2, including_topic=True)
+        Get "lexicon" of words most related to a topic word (its ego graph).
+    largest_component(words)
+        Get largest component on the subgraph induced by a set of words.
     """
 
     def __init__(self, graph, compute_inverse_weight=True):
         """
-        Initializes vector model
-
-        Args:
-            graph (networkx.Graph): network of words whose edges include a "weight" attribute
+        Parameters
+        ----------
+        
+        graph : networkx.Graph
+            Network of words whose edges include a "weight" attribute.
+        compute_inverse_weight : bool, optional
+            Specifies whether to compute an additional "inverse_weight" attribute, which is used to find the shortest path length between words. Default is True.
         """
         if not isinstance(graph, nx.Graph):
             raise TypeError("Expected a networkx.Graph, got %s" % type(graph).__name__)
@@ -270,14 +311,19 @@ class NetworkModel(Model):
 
     def compute_sim(self, word1, word2):
         """
-        Compute efficiency-based similarity (i.e., the length of the shortest path between words)
+        Compute efficiency-based similarity (i.e., the length of the shortest path between words).
 
-        Args:
-            word1 (str): first word
-            word2 (str): second word
+        Parameters
+        ----------
+        word1 : str
+            First word.
+        word2 : str
+            Second word
 
-        Returns:
-            efficiency (float): efficiency-based similarity measure
+        Returns
+        -------
+        efficiency : float
+            Efficiency-based similarity measure (0 if no path exists between words; nan if either word is not in the graph).
         """
         # Compute similarity by local efficiency metric
 
@@ -298,29 +344,38 @@ class NetworkModel(Model):
         """
         Get "lexicon" of words most related to a topic. This function is a wrapper around networkx.ego_graph()
 
-        Args:
-            topic (str): topic word
-            max_steps (int): number of steps to traverse to identify related words
-            including_topic (bool): should the topic word be included in the lexicon?
+        Parameters
+        ----------
+        topic : str
+            Topic word.
+        max_steps : int, optional
+            Number of steps to traverse to identify related words. Default is 2.
+        including_topic : bool, optional
+            Specifies where the topic word should be included in the lexicon. Default is True.
 
         Returns:
-            lexicon (list of str): list of words most related to the topic
+        lexicon : list of strings
+            List of words most related to the topic.
         """
         ego_graph = nx.ego_graph(
             self.graph, n=topic, radius=max_steps, center=including_topic, distance=None
-        )  # Make sure this binarizes the weights
+        )
         lexicon = [w for w in ego_graph]
         return lexicon
 
     def largest_component(self, words):
         """
-        Get largest network component in the subgraph induced by words
+        Get largest network component in the subgraph induced by words. The "component-size" schematicity measure is the cardinality of this largest component divided by the cardinality of the subgraph representing the entire narrative.
 
-        Args:
-            words (list of str): words by which to induce subgraph
+        Parameters
+        ----------
+        words : list of strings
+            Words by which to induce subgraph.
 
-        Returns:
-            component (networkx.Graph): largest network component
+        Returns
+        -------
+        component : networkx.Graph
+            Largest network component.
         """
         subgraph = self.graph.subgraph(words)
         components = nx.connected_components(subgraph)
@@ -338,8 +393,15 @@ class Tokenizer:
     """
     SpaCy-based tokenizer
 
-    Attributes:
-        nlp (spacy model): SpaCy model used to tokenize
+    Attributes
+    ----------
+    nlp : spacy model
+        SpaCy model used to tokenize
+    
+    Methods
+    -------
+    tokenize(text, lowercase=True, rm_stops=True, only_content=True, lemmatize=False)
+        Tokenize a piece of text.
     """
 
     def __init__(self, spacy_model="en_core_web_sm"):
@@ -355,21 +417,27 @@ class Tokenizer:
     def _is_content(self, tok):
         return tok.pos_ in ("NOUN", "VERB", "ADJ", "ADV")
 
-    def tokenize(
-        self, text, rm_stops=True, only_content=True, lemmatize=False, lowercase=True
-    ):
+    def tokenize(self, text, lowercase=True, rm_stops=True, only_content=True, lemmatize=False,):
         """
         Tokenize text (lowercase and keep only non-stop content words)
 
-        Args:
-            text (str): text to be tokenized
-            rm_stops (bool): remove stopwords
-            only_content (bool): keep only content words (nounds, verbs, adjectives, adverbs)
-            lemmatize (bool): lemmatize tokens
-            lowercase (bool): convert words to lowercase
+        Parameters
+        ----------
+        text : str
+            Text to be tokenized.
+        lowercase : bool, optional
+            Specifies whether to convert words to lowercase. Default is True.
+        rm_stops : bool, optional
+            Specifies whether to remove stopwords. Default is True.
+        only_content : bool, optional
+            Specifies whether to keep only content words (nounds, verbs, adjectives, adverbs) as identified by SpaCy's part-of-speech tagger. Default is True.
+        lemmatize : bool, optional
+            Specifies whether to lemmatize tokens using SpaCy's lemmatizer. Default is False.
 
-        Returns:
-            tokens (list of str): list of tokens
+        Returns
+        -------
+        tokens : list of strings
+            List of tokens
         """
         doc = self.nlp(text)
         tokenized = []
@@ -400,18 +468,27 @@ class Tokenizer:
 
 def schematicity(words, model, method, topic=None, pairs=None, lexsize=None):
     """
-    Compute schematicity
+    Compute schematicity using a variety of methods
 
-    Args:
-        words (list of str): tokens from a narrative
-        model (VectorModel or NetworkModel): model to use for computing schematicity
-        method (str): method of computing schematicity ('on-topic-ppn', 'topic-relatedness', 'pairwise-relatedness', or 'component-size')
-        topic (str): topic word for topic-based methods
-        pairs (str): for pairwise-relatedness, which pairs should be used ('all' for all pairs, 'adj' for bigrams/adjacent pairs)
-        lexsize (int): for on-topic-ppn, this parameter is passed to the .get_lexicon() method of the model
+    Parameters
+    ----------
+    words : list of strings
+        Tokens from a narrative.
+    model : VectorModel or NetworkModel
+        The model to use for computing schematicity.
+    method : str
+        The method of computing schematicity ('on-topic-ppn', 'topic-relatedness', 'pairwise-relatedness', or 'component-size').
+    topic : str
+        Topic word to use for topic-based methods (on-topic-ppn and topic-relatedness). Ignored for other methods.
+    pairs : str
+        For the pairwise-relatedness measure, which pairs should be used ('all' for all pairs, 'adj' for bigrams/adjacent pairs). Ignored for other methods.
+    lexsize : int
+        For on-topic-ppn, this parameter is passed to the .get_lexicon() method of the model. Ignored for other methods.
 
-    Returns:
-        schem (float): schematicity measure
+    Returns
+    -------
+    schematicity : float
+        Schematicity measure computed by the requested method.
     """
 
     # Validation
