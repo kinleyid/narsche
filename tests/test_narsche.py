@@ -48,9 +48,9 @@ def test_vector_model_methods(vector_mod):
     sim = vector_mod.compute_sim("lamp", "desk")
     assert 0.98 < sim < 1
     lex = vector_mod.get_lexicon("lamp", top_n=2, including_topic=True)
-    assert set(lex) == {'desk', 'lamp'}
+    assert set(lex) == {"desk", "lamp"}
     vector_mod.get_lexicon("lamp", top_n=2, including_topic=False)
-    assert set(lex) == {'desk', 'chair'}
+    assert set(lex) == {"desk", "chair"}
 
 
 def test_as_graph(vector_mod, network_mod):

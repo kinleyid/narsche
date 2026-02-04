@@ -5,9 +5,11 @@ from collections import Counter
 import networkx as nx
 import spacy
 import sys
+import gzip
 from pdb import set_trace
 
 epsilon = sys.float_info.epsilon
+
 
 def get_pairs(iterable):
     """
@@ -23,7 +25,7 @@ def get_pairs(iterable):
     pairs : list
         Adjacent pairs or items in a list.
     """
-    
+
     pairs = [(a, b) for i, a in enumerate(iterable) for b in iterable[(i + 1) :]]
     return pairs
 
@@ -46,8 +48,8 @@ def identify_topic(words, return_scores=False):
     scores : dict
         TF-IDF scores for each word.
     """
-    
-    bag = set(words) # unique words
+
+    bag = set(words)  # unique words
     # get term frequency
     tf = Counter(words)
     # compute doc frequency (could be 0, in which case sub in epsilon)
@@ -58,14 +60,16 @@ def identify_topic(words, return_scores=False):
     tf_idf = {k: v for k, v in sorted(tf_idf.items(), key=lambda item: -item[1])}
     # topic is first item
     topic = next(iter(tf_idf))
-    assert tf_idf[topic] == max(tf_idf.values()) # probably not necessary but peace of mind
+    assert tf_idf[topic] == max(
+        tf_idf.values()
+    )  # probably not necessary but peace of mind
     if return_scores:
         return topic, tf_idf
     else:
         return topic
 
 
-def read_vectors(file, encoding="utf-8", normalize=True):
+def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
     """
     Create vector model from text file containing word vectors.
 
@@ -76,17 +80,23 @@ def read_vectors(file, encoding="utf-8", normalize=True):
     encoding : str, optional
         The encoding to use when reading the text file. The default is "utf-8".
     normalize : bool, optional
-        Whether to normalize the vectors for cosine similarity computation. Can be skipped for speed if vectors are already normalized. The default is True.
+        Specifies whether to normalize the vectors for cosine similarity computation. Can be skipped for speed if vectors are already normalized. The default is True.
+    archive : bool, optional
+        Specifies whether the text files are in an archive format (e.g. .gz, .zip). The default is False.
 
     Returns
     -------
     model : VectorModel
         A vector model based on the embeddings in the text file.
     """
-    
+
     words = []
     vectors = []
-    with open(file, "r", encoding=encoding) as f:
+    if archive:
+        open_fn = lambda file: gzip.open(file, "rt", encoding=encoding)
+    else:
+        open_fn = lambda file: open(file, "r", encoding=encoding)
+    with open_fn(file) as f:
         for line in f:
             # First item in space-delimited line is token, remaining items are vector elements
             split_line = line.rstrip("\n").split(" ")
@@ -125,14 +135,14 @@ class Model:
 class VectorModel(Model):
     """
     Vector-based model
-    
+
     Attributes
     ----------
     words : dict
         Dictionary mapping words in model to indices of word vectors in the matrix of word vectors (see below).
     vectors : np.ndarray
         Matrix whose rows are the word vectors.
-    
+
     Methods
     -------
     compute_sim(word1, word2)
@@ -152,7 +162,7 @@ class VectorModel(Model):
         vectors : np.ndarray
             A matrix whose rows are the word embeddings.
         """
-        
+
         if isinstance(words, list):
             if not all(isinstance(word, str) for word in words):
                 raise ValueError("words is not a list of strings")
@@ -172,7 +182,7 @@ class VectorModel(Model):
             idx = [self.words[w] for w in key]
             return self.vectors[idx]
         else:
-            raise ValueError('key must be a string or iterable of strings')
+            raise ValueError("key must be a string or iterable of strings")
 
     def __contains__(self, word):
         return word in self.words
@@ -218,7 +228,7 @@ class VectorModel(Model):
         lexicon : list of strings
             List of words most related to the topic word.
         """
-        
+
         # First compute similarities (faster than constructing new matrix not including topic)
         similarities = np.matmul(self.vectors, self[topic])
         if not including_topic:
@@ -227,7 +237,7 @@ class VectorModel(Model):
         # Split at top_n
         lex_idx = np.argpartition(similarities, -top_n)[-top_n:]
         # Need to map from index to words---only create this inverse mapping once as needed
-        if '_rev_idx' not in dir(self):
+        if "_rev_idx" not in dir(self):
             self._rev_idx = {i: w for w, i in self.words.items()}
         lexicon = [self._rev_idx[i] for i in lex_idx]
         # Remove topic word itself?
@@ -273,7 +283,7 @@ class NetworkModel(Model):
     ----------
     graph : networkx.Graph
         Graph of words and their weighted connections
-    
+
     Methods
     -------
     compute_sim(word1, word2)
@@ -295,14 +305,14 @@ class NetworkModel(Model):
         """
         if not isinstance(graph, nx.Graph):
             raise TypeError("Expected a networkx.Graph, got %s" % type(graph).__name__)
-        
-        if compute_inverse_weight:   
+
+        if compute_inverse_weight:
             # Compute inverse weight
             inv_weight = {
                 (a, b): 1 / data["weight"] for a, b, data in graph.edges(data=True)
             }
             nx.set_edge_attributes(graph, inv_weight, "inv_weight")
-        
+
         self.graph = graph
 
     def __contains__(self, word):
@@ -396,7 +406,7 @@ class Tokenizer:
     ----------
     nlp : spacy model
         SpaCy model used to tokenize
-    
+
     Methods
     -------
     tokenize(text, lowercase=True, rm_stops=True, only_content=True, lemmatize=False)
@@ -410,7 +420,7 @@ class Tokenizer:
         spacy_model : str, optional
             Spacy model to use for tokenization. The default is "en_core_web_sm".
         """
-        
+
         self.nlp = spacy.load(spacy_model)
 
     def _lemmatize_token(self, token):
@@ -423,7 +433,14 @@ class Tokenizer:
     def _is_content(self, tok):
         return tok.pos_ in ("NOUN", "VERB", "ADJ", "ADV")
 
-    def tokenize(self, text, lowercase=True, rm_stops=True, only_content=True, lemmatize=False,):
+    def tokenize(
+        self,
+        text,
+        lowercase=True,
+        rm_stops=True,
+        only_content=True,
+        lemmatize=False,
+    ):
         """
         Tokenize text (lowercase and keep only non-stop content words)
 

@@ -5,7 +5,7 @@ import narsche
 
 # Reads conceptnet gzip file, creates graph, and saves
 
-mod_path = '/path/to/models'
+mod_path = '.'
 # Download conceptnet from https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz
 cnet_path = os.path.join(mod_path, 'conceptnet-assertions-5.7.0.csv.gz')
 # initialize graph
