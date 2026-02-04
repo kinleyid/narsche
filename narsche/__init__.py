@@ -234,6 +234,8 @@ class VectorModel(Model):
         if not including_topic:
             # Topic word is guaranteed to be most similar to itself
             top_n = top_n + 1
+        if top_n > len(self.words):
+            raise ValueError('top_n (%s) exceeds the number of words in the model (%s).' % (top_n, len(self.words)))
         # Split at top_n
         lex_idx = np.argpartition(similarities, -top_n)[-top_n:]
         # Need to map from index to words---only create this inverse mapping once as needed
@@ -264,7 +266,7 @@ class VectorModel(Model):
 
         # Get only those tokens that are actually in current dictionary
         if words == None:
-            words = self.words
+            words = list(self.words.keys())
         pairs = get_pairs(words)
         graph = nx.Graph()
         for word1, word2 in pairs:
@@ -489,7 +491,7 @@ class Tokenizer:
         return tokenized
 
 
-def schematicity(words, model, method, topic=None, pairs=None, lexsize=None):
+def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
     """
     Compute schematicity using a variety of methods
 
@@ -505,7 +507,7 @@ def schematicity(words, model, method, topic=None, pairs=None, lexsize=None):
         Topic word to use for topic-based methods (on-topic-ppn and topic-relatedness). Ignored for other methods.
     pairs : str
         For the pairwise-relatedness measure, which pairs should be used ('all' for all pairs, 'adj' for bigrams/adjacent pairs). Ignored for other methods.
-    lexsize : int
+    lex_size : int
         For on-topic-ppn, this parameter is passed to the .get_lexicon() method of the model. Ignored for other methods.
 
     Returns
@@ -551,9 +553,9 @@ def schematicity(words, model, method, topic=None, pairs=None, lexsize=None):
 
     if method == "on-topic-ppn":
         if isinstance(model, VectorModel):
-            kwargs = {} if lexsize == None else {"top_n": lexsize}
+            kwargs = {} if lex_size == None else {"top_n": lex_size}
         elif isinstance(model, NetworkModel):
-            kwargs = {} if lexsize == None else {"max_steps": lexsize}
+            kwargs = {} if lex_size == None else {"max_steps": lex_size}
         else:
             raise ValueError("model must be a VectorModel or NetworkModel")
         lexicon = model.get_lexicon(topic, **kwargs)

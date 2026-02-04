@@ -49,14 +49,15 @@ def test_vector_model_methods(vector_mod):
     assert 0.98 < sim < 1
     lex = vector_mod.get_lexicon("lamp", top_n=2, including_topic=True)
     assert set(lex) == {"desk", "lamp"}
-    vector_mod.get_lexicon("lamp", top_n=2, including_topic=False)
+    lex = vector_mod.get_lexicon("lamp", top_n=2, including_topic=False)
     assert set(lex) == {"desk", "chair"}
 
 
 def test_as_graph(vector_mod, network_mod):
     assert isinstance(network_mod, narsche.NetworkModel)
-    vector_mod.as_graph(words=["lamp", "desk", "pottery"], threshold=0.3)
-    assert len(network_mod.graph) == 2
+    assert len(network_mod.graph) == 4
+    new_net = vector_mod.as_graph(words=["lamp", "desk", "pottery"], threshold=0.3)
+    assert len(new_net.graph) == 2
 
 
 def test_save_network_model(network_mod, cur_dir):
@@ -83,7 +84,7 @@ def test_tokenizer():
 def test_schematicity_vector_model(vector_mod, example_words):
     words = vector_mod.keep_known(example_words)
     narsche.schematicity(
-        model=vector_mod, words=words, method="on-topic-ppn", topic="lamp"
+        model=vector_mod, words=words, method="on-topic-ppn", topic="lamp", lex_size=2
     )
     narsche.schematicity(
         model=vector_mod, words=words, method="topic-relatedness", topic="lamp"
