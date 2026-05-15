@@ -4,7 +4,7 @@
 ![tests](https://github.com/kinleyid/narsche/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/github/kinleyid/narsche/graph/badge.svg?token=EHCYVTZWCE)](https://codecov.io/github/kinleyid/narsche)
 
-Methods from the paper "Computational Tools for Quantifying Schemas in Autobiographical Narratives".
+Methods from the paper "[Computational Tools for Quantifying Schemas in Autobiographical Narratives](https://osf.io/download/m6c7y/)".
 
 ## Installation
 
