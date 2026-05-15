@@ -1,6 +1,7 @@
 import pytest
 import narsche
 import os
+import numpy as np
 from pdb import set_trace
 
 
@@ -39,10 +40,12 @@ def test_read_vector(cur_dir):
 
 def test_save_vector_model(vector_mod, cur_dir):
     vector_mod.save(os.path.join(cur_dir, "vector-model.mod"))
+    vector_mod.save(os.path.join(cur_dir, "vector-model"))
 
 
 def test_load_vector_model(cur_dir):
     narsche.VectorModel.load(os.path.join(cur_dir, "vector-model.mod"))
+    narsche.VectorModel.load(os.path.join(cur_dir, "vector-model"))
 
 
 def test_vector_model_methods(vector_mod):
@@ -108,3 +111,11 @@ def test_schematicity_network_model(network_mod, example_words):
         model=network_mod, words=words, method="pairwise-relatedness", pairs="adj"
     )
     narsche.schematicity(model=network_mod, words=words, method="component-size")
+
+def test_vec_errors():
+    with pytest.raises(Exception):
+        narsche.VectorModel(words='hey', vectors=[1,2,3])
+    with pytest.raises(Exception):
+        narsche.VectorModel(words=['hey'], vectors=[[1,2,3]])
+    with pytest.raises(Exception):
+        narsche.VectorModel(words=['hey', 'hi'], vectors=np.array([[1,2,3]]))
