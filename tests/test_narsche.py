@@ -30,7 +30,7 @@ def network_mod(vector_mod):
 
 
 def test_topic_identification():
-    narsche.identify_topic(["chair", "sofa", "living", "room", "wall", "picture"])
+    narsche.identify_topic(["chair", "sofa", "living", "room", "wall", "picture"], return_scores=True)
 
 
 def test_read_vector(cur_dir):
@@ -84,7 +84,7 @@ def test_network_model_methods(network_mod):
 
 def test_tokenizer():
     tokenizer = narsche.Tokenizer()
-    tokenizer.tokenize("This is a short piece of text")
+    tokenizer.tokenize("This is a short piece of text", lemmatize=True)
 
 
 def test_schematicity_vector_model(vector_mod, example_words):
@@ -124,3 +124,48 @@ def test_vec_errors(vector_mod):
         vector_mod[1]
     with pytest.raises(Exception):
         vector_mod.get_lexicon("lamp", top_n=100, including_topic=True)
+    with pytest.raises(Exception):
+        narsche.VectorModel.load(os.path.join(cur_dir, "network-model.mod"))
+
+def test_net_errors():
+    with pytest.raises(Exception):
+        narsche.NetworkModel.load(os.path.join(cur_dir, "vector-model.mod"))
+
+def test_schematicity_errors(vector_mod, example_words):
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words='a b c', method="on-topic-ppn", topic="lamp", lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=[], method="on-topic-ppn", topic="lamp", lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=['a', 1], method="on-topic-ppn", topic="lamp", lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=example_words, method="my-best-method", topic="lamp", lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=example_words, method="on-topic-ppn", lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=example_words, method="on-topic-ppn", topic='foo', lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=example_words, method="pairwise-relatedness", pairs='any', lex_size=2
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=example_words, method="component-size"
+        )
+    with pytest.raises(Exception):
+        narsche.schematicity(
+            model=vector_mod, words=example_words + ['foo'], method="pairwise-relatedness", pairs='all'
+        )
+    

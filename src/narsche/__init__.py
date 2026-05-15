@@ -460,16 +460,6 @@ class Tokenizer:
 
         self.nlp = spacy.load(spacy_model)
 
-    def _lemmatize_token(self, token):
-        return token.lemma_.lower()
-
-    def _lemmatize(self, text):
-        doc = self.nlp(text)
-        return [self._lemmatize_token(tok) for tok in doc]
-
-    def _is_content(self, tok):
-        return tok.pos_ in ("NOUN", "VERB", "ADJ", "ADV")
-
     def tokenize(
         self,
         text,
@@ -573,7 +563,7 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
         elif topic not in model:
             raise ValueError('topic "%s" is not in model' % topic)
     elif method == "pairwise-relatedness":
-        if pairs not in ["all", "adj"]:
+        if pairs not in ["all", "adj", "adjacent"]:
             raise ValueError(
                 'pairs must be one of "all", "adj" for method "pairwise-relatedness"'
             )
@@ -608,8 +598,6 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
             word_pairs = get_pairs(words)
         elif pairs in ["adj", "adjacent"]:
             word_pairs = list(zip(words[:-1], words[1:]))
-        else:
-            raise ValueError('unrecognized pairs option "%s"' % pairs)
         # Compute average pairwise similarity
         sims = [model.compute_sim(*word_pair) for word_pair in word_pairs]
         return np.mean(sims)
