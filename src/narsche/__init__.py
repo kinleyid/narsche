@@ -76,7 +76,7 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
 
     Parameters
     ----------
-    file : str
+    file : pathlike
         Path to text file containing word vectors.
     encoding : str, optional
         The encoding to use when reading the text file. The default is "utf-8".
@@ -91,14 +91,34 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
         A vector model based on the embeddings in the text file.
     """
 
-    words = []
-    vectors = []
     if archive:
         open_fn = lambda file: gzip.open(file, "rt", encoding=encoding)
     else:
         open_fn = lambda file: open(file, "r", encoding=encoding)
     with open_fn(file) as f:
         lines = f.readlines()
+    model = parse_vectors(lines, normalize=normalize)
+    return model
+
+def parse_vectors(lines, normalize=True):
+    """
+    Parse a list of strings containing word embeddings.
+
+    Parameters
+    ----------
+    lines : list of str
+        List of strings, e.g., from readlines().
+    normalize : bool, optional
+        Specifies whether to normalize the vectors for cosine similarity computation. Can be skipped for speed if vectors are already normalized. The default is True.
+
+    Returns
+    -------
+    model : VectorModel
+        A vector model based on the embeddings in the text.
+    """
+    
+    words = []
+    vectors = []
     for line in tqdm(lines):
         # First item in space-delimited line is token, remaining items are vector elements
         split_line = line.rstrip("\n").split(" ")
@@ -113,7 +133,6 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
         vectors /= norms
     model = VectorModel(words, vectors)
     return model
-
 
 class Model:
     def save(self, path):
