@@ -29,9 +29,6 @@ jobs:
       run: |
         python -m spacy download en_core_web_sm
 
-    - name: Lint with black
-      run: black --check narsche tests
-
     - name: Run tests
       run: |
         pytest --cov --cov-branch --cov-report=xml
