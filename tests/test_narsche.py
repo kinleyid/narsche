@@ -56,6 +56,7 @@ def test_vector_model_methods(vector_mod):
     assert set(lex) == {"desk", "lamp"}
     lex = vector_mod.get_lexicon("lamp", top_n=2, including_topic=False)
     assert set(lex) == {"desk", "chair"}
+    vector_mod[('desk', 'lamp')]
 
 
 def test_as_graph(vector_mod, network_mod):
@@ -112,10 +113,14 @@ def test_schematicity_network_model(network_mod, example_words):
     )
     narsche.schematicity(model=network_mod, words=words, method="component-size")
 
-def test_vec_errors():
+def test_vec_errors(vector_mod):
     with pytest.raises(Exception):
         narsche.VectorModel(words='hey', vectors=[1,2,3])
     with pytest.raises(Exception):
         narsche.VectorModel(words=['hey'], vectors=[[1,2,3]])
     with pytest.raises(Exception):
         narsche.VectorModel(words=['hey', 'hi'], vectors=np.array([[1,2,3]]))
+    with pytest.raises(Exception):
+        vector_mod[1]
+    with pytest.raises(Exception):
+        vector_mod.get_lexicon("lamp", top_n=100, including_topic=True)
