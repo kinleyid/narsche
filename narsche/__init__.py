@@ -98,14 +98,15 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
     else:
         open_fn = lambda file: open(file, "r", encoding=encoding)
     with open_fn(file) as f:
-        for line in tqdm(f):
-            # First item in space-delimited line is token, remaining items are vector elements
-            split_line = line.rstrip("\n").split(" ")
-            words.append(split_line[0])
-            # Normalize vector for fast dot product-based cosine similarity computation
-            vector = np.asarray(split_line[1:]).astype(np.float32)
-            # vector /= np.linalg.norm(vector)
-            vectors.append(vector)
+        lines = f.readlines()
+    for line in tqdm(lines):
+        # First item in space-delimited line is token, remaining items are vector elements
+        split_line = line.rstrip("\n").split(" ")
+        words.append(split_line[0])
+        # Normalize vector for fast dot product-based cosine similarity computation
+        vector = np.asarray(split_line[1:]).astype(np.float32)
+        # vector /= np.linalg.norm(vector)
+        vectors.append(vector)
     vectors = np.array(vectors)
     if normalize:
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
