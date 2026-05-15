@@ -6,10 +6,11 @@ import networkx as nx
 import spacy
 import sys
 import gzip
+from tqdm import tqdm
+import os, pathlib, lzma
 from pdb import set_trace
 
 epsilon = sys.float_info.epsilon
-
 
 def get_pairs(iterable):
     """
@@ -97,7 +98,7 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
     else:
         open_fn = lambda file: open(file, "r", encoding=encoding)
     with open_fn(file) as f:
-        for line in f:
+        for line in tqdm(f):
             # First item in space-delimited line is token, remaining items are vector elements
             split_line = line.rstrip("\n").split(" ")
             words.append(split_line[0])
@@ -115,13 +116,33 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
 
 class Model:
     def save(self, path):
+        path = pathlib.Path(path)
+        file, ext = os.path.splitext(path)
+        if ext == '':
+            path = path.with_suffix('.xz')
+            basename = os.path.basename(path)
+            print('Saving to %s' % basename)
+        with lzma.open(path, "wb") as f:
+            pickle.dump(self, f)
+        """
         with open(path, "wb") as f:
             pickle.dump(self, f)
+        """
 
     @classmethod
     def load(cls, path):
+        path = pathlib.Path(path)
+        file, ext = os.path.splitext(path)
+        if ext == '':
+            path = path.with_suffix('.xz')
+            basename = os.path.basename(path)
+            print('Loading %s' % basename)
+        with lzma.open(path, 'rb') as f:
+            obj = pickle.load(f)
+        """
         with open(path, "rb") as f:
             obj = pickle.load(f)
+        """
         if not isinstance(obj, cls):
             raise TypeError(
                 "Expected instance of %s, got %s" % (cls.__name__, type(obj).__name__)

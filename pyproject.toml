@@ -11,9 +11,7 @@ authors = [
 ]
 readme = "README.md"
 license = "MIT"
-dependencies = [
-    "networkx", "spacy", "wordfreq"
-]
+dependencies = ["networkx", "spacy", "wordfreq", "tqdm"]
 requires-python = ">=3.9"
 
 [tool.setuptools.packages.find]
