@@ -64,13 +64,13 @@ def identify_topic(words, return_scores=False):
     assert tf_idf[topic] == max(
         tf_idf.values()
     )  # probably not necessary but peace of mind
+    out = (topic,)
     if return_scores:
-        return topic, tf_idf
-    else:
-        return topic
+        out += (tf_idf,)
+    return out
 
 
-def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
+def read_vectors(file, encoding="utf-8", normalize=True):
     """
     Create vector model from text file containing word vectors.
 
@@ -82,8 +82,6 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
         The encoding to use when reading the text file. The default is "utf-8".
     normalize : bool, optional
         Specifies whether to normalize the vectors for cosine similarity computation. Can be skipped for speed if vectors are already normalized. The default is True.
-    archive : bool, optional
-        Specifies whether the text files are in an archive format (e.g. .gz, .zip). The default is False.
 
     Returns
     -------
@@ -91,11 +89,7 @@ def read_vectors(file, encoding="utf-8", normalize=True, archive=False):
         A vector model based on the embeddings in the text file.
     """
 
-    if archive:
-        open_fn = lambda file: gzip.open(file, "rt", encoding=encoding)
-    else:
-        open_fn = lambda file: open(file, "r", encoding=encoding)
-    with open_fn(file) as f:
+    with open(file) as f:
         lines = f.readlines()
     model = parse_vectors(lines, normalize=normalize)
     return model

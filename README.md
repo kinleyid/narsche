@@ -73,7 +73,7 @@ topic = narsche.identify_topic(words) # Identify the topic
 # Compute schematicity
 narsche.schematicity(
 	words=words,
-	model=mod,
+	model=vec_mod,
 	method='on-topic-ppn', # or topic-relatedness, pairwise-relatedness, or component-size
 	topic=topic)
 ```
