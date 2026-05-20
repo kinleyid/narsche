@@ -129,9 +129,27 @@ def parse_vectors(lines, normalize=True):
         vectors /= norms
     return words, vectors
 
-def read_conceptnet(path, gz=True, lang='en'):
+def read_conceptnet(path, lang='en'):
+    """
+    Reads raw ConceptNet assertions. They can be downloaded from https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz.
+
+    Parameters
+    ----------
+    path : path-like
+        Path to assertions.
+    lang : str, optional
+        Specifies the language to filter for. The default is 'en'.
+
+    Returns
+    -------
+    networkx.Graph
+        Assertions as a graph with concepts as nodes and edges as relationships. Edges have a 'weight' attribute specifying the strength of connection between concepts.
+    """
+    
     # https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz
-    if gz:
+    path = pathlib.Path(path)
+    file, ext = os.path.splitext(path)
+    if ext == 'gz':
         fopen = gzip.open
     else:
         fopen = open
