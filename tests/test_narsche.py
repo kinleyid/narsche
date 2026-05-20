@@ -32,7 +32,7 @@ def network_mod(vector_mod):
 
 def test_parse_conceptnet(cur_dir):
     file = os.path.join(cur_dir, "mini-conceptnet.csv")
-    graph = narsche.read_conceptnet(file, gz=False)
+    graph = narsche.read_conceptnet(file)
     '''
     file = os.path.join(cur_dir, "mini-conceptnet.csv")
     graph = narsche.read_conceptnet(file, gz=False)
