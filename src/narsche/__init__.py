@@ -352,7 +352,7 @@ class VectorModel(Model):
             words = list(self.words.keys())
         pairs = get_pairs(words)
         graph = nx.Graph()
-        for word1, word2 in pairs:
+        for word1, word2 in tqdm(pairs, desc='Computing sim.'):
             sim = self.compute_sim(word1, word2)
             if sim >= threshold:
                 graph.add_edge(word1, word2, weight=sim)
@@ -637,7 +637,10 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
         return ppn_on_topic
 
     elif method == "topic-relatedness":
-        sims = [model.compute_sim(word, topic) for word in words]
+        sims = []
+        for word in tqdm(words, desc='Computing sim.'):
+            sim = model.compute_sim(word, topic)
+            sims.append(sim)
         return np.mean(sims)
 
     elif method == "pairwise-relatedness":
@@ -647,7 +650,10 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
         elif pairs in ["adj", "adjacent"]:
             word_pairs = list(zip(words[:-1], words[1:]))
         # Compute average pairwise similarity
-        sims = [model.compute_sim(*word_pair) for word_pair in word_pairs]
+        sims = []
+        for word_pair in tqdm(word_pairs, desc='Computing sim.'):
+            sim = model.compute_sim(*word_pair)
+            sims.append(sim)
         return np.mean(sims)
 
     elif method == "component-size":
