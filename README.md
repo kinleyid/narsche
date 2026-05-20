@@ -25,21 +25,18 @@ python -m spacy download en_core_web_sm
 A text file of word vectors can be read using the `read_vectors()` function:
 
 ```python
-vec_mod = narsche.read_vectors('/path/to/vectors.txt')
+words, vectors = narsche.read_vectors('/path/to/vectors.txt')
+vec_mod = narsche.VectorModel(words, vectors)
 ```
 
 This produces a vector model. The text file must be formatted such that the first token (space-delimited) on a line is the word for which the remaining tokens are the vector components. This is how, for example, the [GloVe embeddings](https://nlp.stanford.edu/projects/glove/) are formatted.
 
-Initializing a network model requires first loading a `networkx.Graph` object:
+A network model can be created by first downloading the ConceptNet assertions [here](https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz). They can be read as a `networkx.Graph` object and used to create a network model:
 
 ```python
-import networkx as nx
-
-graph = nx.load('/path/to/graph')
+graph = narsche.read_conceptnet('conceptnet-assertions-5.7.0.csv.gz', gz=True)
 net_mod = narsche.NetworkModel(graph)
 ```
-
-A script for setting up a network model us can be found [here](/examples/create-conceptnet-graph.py).
 
 Models can be saved using the `save()` method and loaded using the `load()` class method:
 

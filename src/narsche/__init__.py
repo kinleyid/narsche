@@ -8,6 +8,8 @@ import sys
 import gzip
 from tqdm import tqdm
 import os, pathlib, lzma
+import json
+
 from pdb import set_trace
 
 epsilon = sys.float_info.epsilon
@@ -113,7 +115,7 @@ def parse_vectors(lines, normalize=True):
     
     words = []
     vectors = []
-    for line in tqdm(lines):
+    for line in tqdm(lines, desc='Parsing vectors'):
         # First item in space-delimited line is token, remaining items are vector elements
         split_line = line.rstrip("\n").split(" ")
         words.append(split_line[0])
@@ -125,8 +127,54 @@ def parse_vectors(lines, normalize=True):
     if normalize:
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
         vectors /= norms
-    model = VectorModel(words, vectors)
-    return model
+    return words, vectors
+
+def read_conceptnet(path, gz=True, lang='en'):
+    # https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz
+    if gz:
+        fopen = gzip.open
+    else:
+        fopen = open
+    with fopen(path, 'rt', encoding='utf-8') as f:
+        lines = f.readlines()
+    G = nx.Graph()
+    # loop over lines
+    for line in tqdm(lines, desc='Parsing lines'):
+        ### Parse relation
+        # split by tab
+        cols = line.split('\t')
+        # get relation
+        relation = cols[1].split('/')[-1]
+        # ExternalURL is a pseudo-relation; therefore skip
+        if relation == 'ExternalURL':
+            continue
+        # columns 2 and 3 are URIs
+        segmented_uris = [uri.split('/') for uri in cols[2:4]]
+        # get languages
+        langs = [segs[2] for segs in segmented_uris]
+        # Enforce language
+        if not all(lang == lang for lang in langs):
+            continue
+        # get node types
+        node_types = [segs[1] for segs in segmented_uris]
+        # both must be concepts
+        if not all(node_type == 'c' for node_type in node_types):
+            continue
+        # get words
+        words = [segs[3] for segs in segmented_uris]
+        # only examine single words (no underscore)
+        if not all(('_' not in word) for word in words):
+            continue
+        # get weight by parsing json from final column
+        weight = json.loads(cols[-1])['weight']
+        
+        ### store in graph
+        # already in graph? If not, default to 0 weight
+        prev_weight = G.get_edge_data(*words, default={'weight': 0})['weight']
+        # add weights across relation types
+        new_weight = weight + prev_weight
+        G.add_edge(*words, weight=new_weight)
+    return G
 
 class Model:
     def save(self, path):
@@ -345,9 +393,9 @@ class NetworkModel(Model):
 
         if compute_inverse_weight:
             # Compute inverse weight
-            inv_weight = {
-                (a, b): 1 / data["weight"] for a, b, data in graph.edges(data=True)
-            }
+            inv_weight = {}
+            for a, b, data in tqdm(graph.edges(data=True), desc='Inv. weight'):
+                inv_weight[(a, b)] = 1 / data["weight"]
             nx.set_edge_attributes(graph, inv_weight, "inv_weight")
 
         self.graph = graph

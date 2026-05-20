@@ -19,7 +19,8 @@ def cur_dir():
 @pytest.fixture
 def vector_mod(cur_dir):
     sample_vec_file = os.path.join(cur_dir, "sample-vectors.txt")
-    mod = narsche.read_vectors(sample_vec_file)
+    words, vectors = narsche.read_vectors(sample_vec_file)
+    mod = narsche.VectorModel(words, vectors)
     # assert isinstance(vector_mod, narsche.VectorModel)
     return mod
 
@@ -27,6 +28,15 @@ def vector_mod(cur_dir):
 @pytest.fixture
 def network_mod(vector_mod):
     return vector_mod.as_graph(threshold=0.9)
+
+
+def test_parse_conceptnet(cur_dir):
+    file = os.path.join(cur_dir, "mini-conceptnet.csv")
+    graph = narsche.read_conceptnet(file, gz=False)
+    '''
+    file = os.path.join(cur_dir, "mini-conceptnet.csv")
+    graph = narsche.read_conceptnet(file, gz=False)
+    '''
 
 
 def test_topic_identification():
