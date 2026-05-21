@@ -29,6 +29,10 @@ def vector_mod(cur_dir):
 def network_mod(vector_mod):
     return vector_mod.as_graph(threshold=0.9)
 
+def test_parse_swow(cur_dir):
+    file = os.path.join(cur_dir, "mini-swow.csv")
+    graph = narsche.read_swow(file)
+
 
 def test_parse_conceptnet(cur_dir):
     file = os.path.join(cur_dir, "mini-conceptnet.csv")

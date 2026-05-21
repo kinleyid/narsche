@@ -131,7 +131,7 @@ def parse_vectors(lines, normalize=True):
 
 def read_conceptnet(path, lang='en'):
     """
-    Reads raw ConceptNet assertions. They can be downloaded from https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz.
+    Read raw ConceptNet assertions. They can be downloaded from https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz.
 
     Parameters
     ----------
@@ -192,6 +192,38 @@ def read_conceptnet(path, lang='en'):
         # add weights across relation types
         new_weight = weight + prev_weight
         G.add_edge(*words, weight=new_weight)
+    return G
+
+def read_swow(path):
+    """
+    Read Small World of Words (De Deyne et al., 2019; https://doi.org/10.3758/s13428-018-1115-7) association data to networkx graph. Association data can be downloaded from https://smallworldofwords.org/en/project/research.
+
+    Parameters
+    ----------
+    path : path-like
+        Path to a copy of strength.SWOW-EN.R1.20180827.csv.
+
+    Returns
+    -------
+    networkx.Graph
+        Associations as a graph, with words as nodes and relationships as edges with a "weight" attribute quantifying the associative strength.
+
+    """
+    
+    with open(path) as f:
+        lines = f.read().splitlines()
+    header = lines[0].split('\t')
+    is_swow = header[0] == 'cue' and header[1] == 'response' and header[4] == 'R1.Strength'
+    if not is_swow:
+        raise ValueError('File does not match the expected format. Make sure to use the file "strength.SWOW-EN.R1.20180827.csv" from https://smallworldofwords.org/en/project/research')
+    G = nx.Graph()
+    for line in tqdm(lines[1:]):
+        elems = line.split('\t')
+        word_pair = elems[:2]
+        weight = float(elems[4])
+        prev_weight = G.get_edge_data(*word_pair, default={'weight': 0})['weight']
+        if weight > prev_weight:
+            G.add_edge(*word_pair, weight=weight)
     return G
 
 class Model:
