@@ -99,6 +99,7 @@ def test_network_model_methods(network_mod):
 def test_tokenizer():
     tokenizer = narsche.Tokenizer()
     tokenizer.tokenize("This is a short piece of text", lemmatize=True)
+    tokenizer.tokenize("This is a short piece of text", lemmatize=False)
 
 
 def test_schematicity_vector_model(vector_mod, example_words):
@@ -111,6 +112,9 @@ def test_schematicity_vector_model(vector_mod, example_words):
     )
     narsche.schematicity(
         model=vector_mod, words=words, method="pairwise-relatedness", pairs="adj"
+    )
+    narsche.schematicity(
+        model=vector_mod, words=words, method="pairwise-relatedness", pairs="all"
     )
 
 
