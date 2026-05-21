@@ -66,9 +66,10 @@ def identify_topic(words, return_scores=False):
     assert tf_idf[topic] == max(
         tf_idf.values()
     )  # probably not necessary but peace of mind
-    out = (topic,)
     if return_scores:
-        out += (tf_idf,)
+        out = (topic, tf_idf)
+    else:
+        out = topic
     return out
 
 
