@@ -43,8 +43,13 @@ def test_parse_conceptnet(cur_dir):
     '''
 
 
-def test_topic_identification():
+def test_topic_identification(vector_mod, example_words):
     narsche.identify_topic(["chair", "sofa", "living", "room", "wall", "picture"], return_scores=True)
+    words = vector_mod.keep_known(example_words)
+    topic = narsche.identify_topic(words)
+    narsche.schematicity(
+        model=vector_mod, words=words, method="on-topic-ppn", topic=topic, lex_size=2
+    )
 
 
 def test_read_vector(cur_dir):
