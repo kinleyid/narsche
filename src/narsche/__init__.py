@@ -211,14 +211,14 @@ def read_swow(path):
 
     """
     
-    with open(path) as f:
+    with open(path, 'rt', encoding='utf-8') as f:
         lines = f.read().splitlines()
     header = lines[0].split('\t')
     is_swow = header[0] == 'cue' and header[1] == 'response' and header[4] == 'R1.Strength'
     if not is_swow:
         raise ValueError('File does not match the expected format. Make sure to use the file "strength.SWOW-EN.R1.20180827.csv" from https://smallworldofwords.org/en/project/research')
     G = nx.Graph()
-    for line in tqdm(lines[1:]):
+    for line in tqdm(lines[1:], desc='Parsing lines'):
         elems = line.split('\t')
         word_pair = elems[:2]
         weight = float(elems[4])
@@ -445,7 +445,7 @@ class NetworkModel(Model):
         if compute_inverse_weight:
             # Compute inverse weight
             inv_weight = {}
-            for a, b, data in tqdm(graph.edges(data=True), desc='Inv. weight'):
+            for a, b, data in tqdm(graph.edges(data=True), desc='Inverting weights'):
                 inv_weight[(a, b)] = 1 / data["weight"]
             nx.set_edge_attributes(graph, inv_weight, "inv_weight")
 
