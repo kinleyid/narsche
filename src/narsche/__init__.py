@@ -150,10 +150,12 @@ def read_conceptnet(path, lang='en'):
     # https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz
     path = pathlib.Path(path)
     file, ext = os.path.splitext(path)
-    if ext == 'gz':
+    if ext == '.gz':
         fopen = gzip.open
-    else:
+    elif ext == '.csv':
         fopen = open
+    else:
+        raise ValueError('Extension is "%s", which is neither .gz nor .csv. Unsure how to read this file.' % ext)
     with fopen(path, 'rt', encoding='utf-8') as f:
         lines = f.readlines()
     G = nx.Graph()
