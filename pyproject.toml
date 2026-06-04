@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "narsche"
 dependencies = ["networkx", "spacy", "wordfreq", "tqdm", "joblib"]
-version = "0.3.3"
+version = "0.3.4"
 description = "Computing schematicity of autobiographical narratives"
 authors = [{ name="Isaac Kinley", email="isaac.kinley@gmail.com" }]
 readme = "README.md"

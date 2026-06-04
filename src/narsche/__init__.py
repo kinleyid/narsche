@@ -131,7 +131,7 @@ def parse_vectors(lines, normalize=True):
         vectors /= norms
     return words, vectors
 
-def read_conceptnet(path, lang='en'):
+def read_conceptnet(path):
     """
     Read raw ConceptNet assertions. They can be downloaded from https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz.
 
@@ -139,8 +139,6 @@ def read_conceptnet(path, lang='en'):
     ----------
     path : path-like
         Path to assertions.
-    lang : str, optional
-        Specifies the language to filter for. The default is 'en'.
 
     Returns
     -------
@@ -175,7 +173,7 @@ def read_conceptnet(path, lang='en'):
         # get languages
         langs = [segs[2] for segs in segmented_uris]
         # Enforce language
-        if not all(lang == lang for lang in langs):
+        if not all(lang == 'en' for lang in langs):
             continue
         # get node types
         node_types = [segs[1] for segs in segmented_uris]

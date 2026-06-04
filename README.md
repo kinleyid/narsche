@@ -12,11 +12,13 @@ Methods from the paper "[Computational Tools for Quantifying Schemas in Autobiog
 pip install narsche
 ```
 
-`narsche` depends on `networkx` (for network models), `SpaCy` (for tokenization), and `wordfreq` for automated topic identification. Additionally, one of `SpaCy`'s models must be downloaded for `SpaCy`-based tokenization:
+`narsche` depends on `networkx` (for network models), `SpaCy` (for tokenization), and `wordfreq` for automated topic identification. Additionally, one of `SpaCy`'s English-language models must be downloaded for `SpaCy`-based tokenization. For example:
 
 ```bash
 python -m spacy download en_core_web_sm
 ```
+
+See [the SpaCy documentation](https://spacy.io/usage/models/) for more information on these models.
 
 ## Usage
 
@@ -34,7 +36,7 @@ This produces a vector model. The text file must be formatted such that the firs
 A network model can be created by first downloading the ConceptNet assertions [here](https://s3.amazonaws.com/conceptnet/downloads/2019/edges/conceptnet-assertions-5.7.0.csv.gz). They can be read as a `networkx.Graph` object and used to create a network model:
 
 ```python
-graph = narsche.read_conceptnet('conceptnet-assertions-5.7.0.csv.gz', gz=True)
+graph = narsche.read_conceptnet('conceptnet-assertions-5.7.0.csv.gz')
 net_mod = narsche.NetworkModel(graph)
 ```
 
