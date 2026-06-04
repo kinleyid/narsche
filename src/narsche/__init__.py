@@ -8,6 +8,7 @@ import sys
 import gzip
 from tqdm import tqdm
 import os, pathlib, lzma
+from joblib import Parallel, delayed, effective_n_jobs
 import json
 
 from pdb import set_trace
@@ -617,7 +618,7 @@ class Tokenizer:
         return tokenized
 
 
-def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
+def schematicity(words, model, method, topic=None, pairs=None, lex_size=None, n_jobs=1):
     """
     Compute schematicity using a variety of methods
 
@@ -630,11 +631,13 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
     method : str
         The method of computing schematicity ('on-topic-ppn', 'topic-relatedness', 'pairwise-relatedness', or 'component-size').
     topic : str
-        Topic word to use for topic-based methods (on-topic-ppn and topic-relatedness). Ignored for other methods.
+        Topic word to use for topic-based methods (on-topic-ppn and topic-relatedness). Ignored for other methods. The default value is None.
     pairs : str
-        For the pairwise-relatedness measure, which pairs should be used ('all' for all pairs, 'adj' for bigrams/adjacent pairs). Ignored for other methods.
+        For the pairwise-relatedness measure, which pairs should be used ('all' for all pairs, 'adj' for bigrams/adjacent pairs). Ignored for other methods. The default value is None.
     lex_size : int
-        For on-topic-ppn, this parameter is passed to the .get_lexicon() method of the model. Ignored for other methods.
+        For on-topic-ppn, this parameter is passed to the .get_lexicon() method of the model. Ignored for other methods. The default value is None.
+    n_jobs : int
+        For the pairwise-relatedness measure, this argument can be used to parallelize cosine similarity computations. This is intented to accelerate pairwise efficiency calculations for network models. The default value is 1 (no parallelization).
 
     Returns
     -------
@@ -676,6 +679,10 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
         raise ValueError(
             "not all words are in model. Use .keep_known() to filter out words not in the model"
         )
+    if n_jobs != 1 and method != 'pairwise-relatedness':
+        raise Warning('Parallel computing is only implemented for the "pairwise-relatedness" method.')
+    else:
+        n_jobs = effective_n_jobs(n_jobs)
 
     if method == "on-topic-ppn":
         if isinstance(model, VectorModel):
@@ -703,10 +710,11 @@ def schematicity(words, model, method, topic=None, pairs=None, lex_size=None):
         elif pairs in ["adj", "adjacent"]:
             word_pairs = list(zip(words[:-1], words[1:]))
         # Compute average pairwise similarity
-        sims = []
-        for word_pair in tqdm(word_pairs, desc='Computing sim.'):
-            sim = model.compute_sim(*word_pair)
-            sims.append(sim)
+        sims = Parallel(n_jobs=n_jobs)(
+            # delayed(self._single_permutation)(*perm)
+            delayed(model.compute_sim)(*word_pair)
+            for word_pair in tqdm(word_pairs, desc='Computing sim.')
+        )
         return np.mean(sims)
 
     elif method == "component-size":

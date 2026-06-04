@@ -134,6 +134,9 @@ def test_schematicity_network_model(network_mod, example_words):
     narsche.schematicity(
         model=network_mod, words=words, method="pairwise-relatedness", pairs="adj"
     )
+    narsche.schematicity(
+        model=network_mod, words=words, method="pairwise-relatedness", pairs="adj", n_jobs=2
+    )
     narsche.schematicity(model=network_mod, words=words, method="component-size")
 
 def test_vec_errors(vector_mod):
